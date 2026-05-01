@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: finance-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-personal_finance_tracker}
+      MYSQL_USER: ${DB_USER:-finance_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-finance_password}
+      TZ: 'UTC'
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - finance-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    container_name: finance-backend
+    restart: always
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 5001
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5175}
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-finance_user}
+      DB_PASSWORD: ${DB_PASSWORD:-finance_password}
+      DB_NAME: ${DB_NAME:-personal_finance_tracker}
+      DB_PORT: 3306
+    ports:
+      - "5001:5001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - finance-network
+    volumes:
+      - ./backend:/app/backend
+    command: node server.js
+
+  # Frontend App
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    container_name: finance-frontend
+    restart: always
+    ports:
+      - "5175:5175"
+    depends_on:
+      - backend
+    networks:
+      - finance-network
+    environment:
+      - VITE_API_URL=http://backend:5001/api
+
+networks:
+  finance-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
