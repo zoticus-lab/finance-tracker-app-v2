@@ -8,8 +8,8 @@ ENV NODE_ENV=production
 # Copy ONLY backend files (skip root package.json complexity)
 COPY backend/package*.json ./
 
-# Install backend dependencies ONLY
-RUN npm install --prefer-offline --no-audit
+# Install backend dependencies ONLY - simple and reliable
+RUN npm install
 
 # Copy backend source code
 COPY backend/ ./

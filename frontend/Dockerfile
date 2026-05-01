@@ -5,11 +5,14 @@ WORKDIR /app/frontend
 
 ENV NODE_ENV=production
 
+# Verify Node and npm are installed
+RUN node --version && npm --version
+
 # Copy ONLY frontend files (skip root package.json complexity)
 COPY frontend/package*.json ./
 
-# Install frontend dependencies ONLY
-RUN npm install --prefer-offline --no-audit
+# Install ALL frontend dependencies (build stage needs devDependencies for Vite)
+RUN npm install && npm list --depth=0
 
 # Copy frontend source code
 COPY frontend/src ./src
@@ -18,7 +21,7 @@ COPY frontend/vite.config.js ./
 COPY frontend/tailwind.config.js ./
 COPY frontend/postcss.config.js ./
 
-# Build React app
+# Build React app with Vite
 RUN npm run build
 
 # Production stage
