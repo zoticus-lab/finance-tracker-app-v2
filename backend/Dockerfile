@@ -8,12 +8,8 @@ ENV NODE_ENV=production
 # Copy ONLY backend files (skip root package.json complexity)
 COPY backend/package*.json ./
 
-# Verify what we copied
-RUN echo "=== Backend package.json ===" && cat package.json && echo ""
-
-# Install backend dependencies using npm ci
-RUN echo "=== Installing npm packages ===" && npm ci --verbose 2>&1 | tail -50 && \
-    echo "=== Verify installation ===" && npm list --depth=0
+# Install backend dependencies
+RUN npm install
 
 # Copy backend source code
 COPY backend/ ./
