@@ -5,18 +5,17 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Pastikan file package.json dari root dan folder frontend terbawa
+# Copy root workspace package.json (PENTING untuk npm workspace)
 COPY package*.json ./
-COPY frontend/package*.json ./
 
-# Install dependencies (lebih fleksibel terhadap perbedaan versi)
+# Copy frontend folder lengkap (includes package.json & src)
+COPY frontend/ ./frontend/
+
+# Install dependencies (akan resolve semua workspaces)
 RUN npm install
 
-# Copy frontend code
-COPY frontend/ ./
-
-# Build React app
-RUN npm run build
+# Build frontend menggunakan npm workspace command
+RUN npm run build --workspace=frontend
 
 # Production stage - serve optimized build
 FROM node:24-alpine
@@ -26,8 +25,8 @@ WORKDIR /app
 # Install serve globally (lightweight static server)
 RUN npm install -g serve
 
-# Copy built files from builder
-COPY --from=builder /app/dist ./dist
+# Copy built files dari builder (dari frontend/dist)
+COPY --from=builder /app/frontend/dist ./dist
 
 # Expose port
 EXPOSE 5175

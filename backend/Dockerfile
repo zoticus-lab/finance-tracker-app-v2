@@ -6,15 +6,14 @@ WORKDIR /app
 # Set environment to production
 ENV NODE_ENV=production
 
-# Pastikan file package.json dari root dan folder backend terbawa
+# Copy root workspace package.json (PENTING untuk npm workspace)
 COPY package*.json ./
-COPY backend/package*.json ./
 
-# Install dependencies (lebih fleksibel terhadap perbedaan versi)
+# Copy backend folder lengkap (includes package.json)
+COPY backend/ ./backend/
+
+# Install dependencies (akan resolve semua workspaces)
 RUN npm install
-
-# Copy backend code
-COPY backend/ ./
 
 # Expose port
 EXPOSE 5001
@@ -23,5 +22,5 @@ EXPOSE 5001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5001/api/dashboard', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
 
-# Start server
-CMD ["node", "server.js"]
+# Start server dari backend folder
+CMD ["node", "backend/server.js"]
