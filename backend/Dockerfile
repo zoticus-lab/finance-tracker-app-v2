@@ -12,8 +12,15 @@ COPY package*.json ./
 # Copy backend folder lengkap (includes package.json)
 COPY backend/ ./backend/
 
-# Install dependencies (akan resolve semua workspaces)
-RUN npm install
+# Install root dependencies
+RUN npm install 2>&1
+
+# Install backend dependencies separately
+WORKDIR /app/backend
+RUN npm install 2>&1
+
+# Back to app root
+WORKDIR /app
 
 # Expose port
 EXPOSE 5001
