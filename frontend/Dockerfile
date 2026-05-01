@@ -13,7 +13,6 @@ RUN npm install --prefer-offline --no-audit
 
 # Copy frontend source code
 COPY frontend/src ./src
-COPY frontend/public ./public 2>/dev/null || true
 COPY frontend/index.html ./
 COPY frontend/vite.config.js ./
 COPY frontend/tailwind.config.js ./
