@@ -1,18 +1,14 @@
-# Frontend Dockerfile - Production Ready (Multi-stage build)
-FROM node:24-alpine as builder
+FROM node:24-alpine
 
 WORKDIR /app/frontend
 
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 
-# Verify Node and npm are installed
-RUN node --version && npm --version
-
-# Copy ONLY frontend files (skip root package.json complexity)
+# Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install using npm install
-RUN npm install
+# Install frontend dependencies
+RUN npm install --legacy-peer-deps
 
 # Copy frontend source code
 COPY frontend/src ./src
@@ -21,23 +17,7 @@ COPY frontend/vite.config.js ./
 COPY frontend/tailwind.config.js ./
 COPY frontend/postcss.config.js ./
 
-# Build React app with Vite
-RUN npm run build
-
-# Production stage
-FROM node:24-alpine
-
-WORKDIR /app
-
-# Install serve
-RUN npm install -g serve
-
-# Copy built dist
-COPY --from=builder /app/frontend/dist ./dist
-
 EXPOSE 5175
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:5175/ || exit 1
-
-CMD ["serve", "-s", "dist", "-l", "5175"]
+# Run Vite dev server on all interfaces
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
