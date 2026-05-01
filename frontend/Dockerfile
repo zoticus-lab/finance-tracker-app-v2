@@ -1,41 +1,41 @@
 # Frontend Dockerfile - Production Ready (Multi-stage build)
 FROM node:24-alpine as builder
 
-WORKDIR /app
+WORKDIR /app/frontend
 
 ENV NODE_ENV=production
 
-# Copy root dan frontend package.json
-COPY package*.json ./
-COPY frontend/package*.json ./frontend/
+# Copy ONLY frontend files (skip root package.json complexity)
+COPY frontend/package*.json ./
 
-# Install root dependencies
-RUN npm install 2>&1
+# Install frontend dependencies ONLY
+RUN npm install --prefer-offline --no-audit
 
-# Install frontend dependencies separately
-WORKDIR /app/frontend
-RUN npm install 2>&1
+# Copy frontend source code
+COPY frontend/src ./src
+COPY frontend/public ./public 2>/dev/null || true
+COPY frontend/index.html ./
+COPY frontend/vite.config.js ./
+COPY frontend/tailwind.config.js ./
+COPY frontend/postcss.config.js ./
 
-# Build frontend
+# Build React app
 RUN npm run build
 
-# Production stage - serve optimized build
+# Production stage
 FROM node:24-alpine
 
 WORKDIR /app
 
-# Install serve globally
+# Install serve
 RUN npm install -g serve
 
-# Copy built dist folder dari builder
+# Copy built dist
 COPY --from=builder /app/frontend/dist ./dist
 
-# Expose port
 EXPOSE 5175
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:5175/ || exit 1
 
-# Serve the app
 CMD ["serve", "-s", "dist", "-l", "5175"]
