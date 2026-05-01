@@ -7,8 +7,11 @@ ENV NODE_ENV=development
 # Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install frontend dependencies
-RUN npm install --legacy-peer-deps
+# Install frontend dependencies with error output
+RUN npm install
+
+# Verify critical packages are installed
+RUN npm list react react-dom recharts vite lucide-react 2>&1 | head -20 || echo "Checking npm list..."
 
 # Copy frontend source code
 COPY frontend/src ./src
