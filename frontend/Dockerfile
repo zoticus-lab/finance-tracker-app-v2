@@ -11,8 +11,15 @@ RUN node --version && npm --version
 # Copy ONLY frontend files (skip root package.json complexity)
 COPY frontend/package*.json ./
 
-# Install ALL frontend dependencies (build stage needs devDependencies for Vite)
-RUN npm install && npm list --depth=0
+# Show what we copied
+RUN echo "=== package.json ===" && cat package.json && echo ""
+
+# Install using npm ci (uses package-lock.json for reproducible builds)
+RUN echo "=== Installing npm packages with npm ci ===" && npm ci --verbose 2>&1 | tail -100
+
+# Verify installation
+RUN echo "=== Checking npm list ===" && npm list --depth=0 && \
+    echo "=== Checking vite ===" && npx vite --version
 
 # Copy frontend source code
 COPY frontend/src ./src
@@ -21,8 +28,11 @@ COPY frontend/vite.config.js ./
 COPY frontend/tailwind.config.js ./
 COPY frontend/postcss.config.js ./
 
-# Build React app with Vite
-RUN npm run build
+# Show working directory structure
+RUN echo "=== Current directory ===" && pwd && echo "=== Files ===" && ls -la
+
+# Build React app with Vite - show all output
+RUN echo "=== Running npm run build ===" && npm run build 2>&1
 
 # Production stage
 FROM node:24-alpine
