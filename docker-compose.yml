@@ -1,7 +1,12 @@
 version: '3.8'
 
+# Production Docker Compose for Finance Tracker
+# Deploy with: docker-compose up -d
+# View logs: docker-compose logs -f [service-name]
+# Stop all: docker-compose down
+
 services:
-  # MySQL Database
+  # MySQL Database (Port 3306)
   mysql:
     image: mysql:8.0
     container_name: finance-db
@@ -24,8 +29,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  # Backend API
+  # Backend Express API (Port 5001)
   backend:
     build:
       context: .
@@ -33,7 +46,7 @@ services:
     container_name: finance-backend
     restart: always
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
+      NODE_ENV: production
       PORT: 5001
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5175}
       DB_HOST: mysql
@@ -48,11 +61,16 @@ services:
         condition: service_healthy
     networks:
       - finance-network
-    volumes:
-      - ./backend:/app/backend
-    command: node server.js
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
 
-  # Frontend App
+  # Frontend React App (Port 5175)
   frontend:
     build:
       context: .
@@ -65,13 +83,21 @@ services:
       - backend
     networks:
       - finance-network
-    environment:
-      - VITE_API_URL=http://backend:5001/api
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+        reservations:
+          cpus: '0.5'
+          memory: 128M
 
+# Network untuk komunikasi antar services
 networks:
   finance-network:
     driver: bridge
 
+# Volume untuk persist database
 volumes:
   mysql_data:
     driver: local

@@ -1,12 +1,14 @@
-# Frontend Dockerfile with multi-stage build
+# Frontend Dockerfile - Production Ready (Multi-stage build)
 FROM node:24-alpine as builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+ENV NODE_ENV=production
 
-# Install dependencies
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies for build
 RUN npm ci
 
 # Copy frontend code
@@ -15,12 +17,12 @@ COPY frontend/ ./
 # Build React app
 RUN npm run build
 
-# Production stage - serve with node static server
+# Production stage - serve optimized build
 FROM node:24-alpine
 
 WORKDIR /app
 
-# Install serve to run the built app
+# Install serve globally (lightweight static server)
 RUN npm install -g serve
 
 # Copy built files from builder
