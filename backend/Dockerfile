@@ -6,11 +6,12 @@ WORKDIR /app
 # Set environment to production
 ENV NODE_ENV=production
 
-# Copy package files
+# Pastikan file package.json dari root dan folder backend terbawa
+COPY package*.json ./
 COPY backend/package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Install dependencies (lebih fleksibel terhadap perbedaan versi)
+RUN npm install
 
 # Copy backend code
 COPY backend/ ./

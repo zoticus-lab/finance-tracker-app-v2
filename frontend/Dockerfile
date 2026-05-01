@@ -5,11 +5,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy package files
+# Pastikan file package.json dari root dan folder frontend terbawa
+COPY package*.json ./
 COPY frontend/package*.json ./
 
-# Install dependencies for build
-RUN npm ci
+# Install dependencies (lebih fleksibel terhadap perbedaan versi)
+RUN npm install
 
 # Copy frontend code
 COPY frontend/ ./
