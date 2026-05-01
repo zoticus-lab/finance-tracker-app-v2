@@ -45,7 +45,7 @@ node server.js
 ### Option 3: Frontend Saja
 ```bash
 cd frontend
-```
+npm run dev
 ✅ Frontend jalan di http://localhost:5175
 
 ---
