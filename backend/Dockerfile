@@ -5,8 +5,9 @@ WORKDIR /app/backend
 
 ENV NODE_ENV=development
 
-# Copy backend files
-COPY backend/package*.json ./
+# Copy ONLY backend package files (bypass root workspace config)
+COPY backend/package.json ./
+COPY backend/package-lock.json ./
 
 # Clear npm cache and set longer timeouts
 RUN npm cache clean --force && \
@@ -14,30 +15,31 @@ RUN npm cache clean --force && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000
 
-# Install backend dependencies with explicit flags
+# Install dependencies WITHOUT workspace (force local install only)
 RUN npm install \
     --no-audit \
     --no-fund \
+    --no-optional \
     --production=false \
     --prefer-offline \
     --verbose 2>&1 | tee /tmp/npm-install.log
 
 # Show installation summary
-RUN echo "=== NPM Install Complete ===" && \
-    tail -50 /tmp/npm-install.log
+RUN echo "=== NPM Install Summary ===" && \
+    tail -100 /tmp/npm-install.log
 
 # VERIFY critical packages exist
-RUN echo "=== Checking express ===" && \
-    ls -lh node_modules/express/package.json 2>&1 || (echo "FAIL: express missing" && cat /tmp/npm-install.log && exit 1)
+RUN if [ ! -f "node_modules/express/package.json" ]; then \
+    echo "ERROR: express missing!"; \
+    cat /tmp/npm-install.log; \
+    exit 1; \
+  fi && echo "✓ express verified"
 
-RUN echo "=== Checking mysql2 ===" && \
-    ls -lh node_modules/mysql2/package.json 2>&1 || (echo "FAIL: mysql2 missing" && exit 1)
+RUN test -f node_modules/mysql2/package.json && echo "✓ mysql2 ok" || exit 1
+RUN test -f node_modules/cors/package.json && echo "✓ cors ok" || exit 1
 
-RUN echo "=== Checking cors ===" && \
-    ls -lh node_modules/cors/package.json 2>&1 || (echo "FAIL: cors missing" && exit 1)
-
-# List all packages
-RUN echo "=== Installed packages ===" && npm list --depth=0
+# Show final package list
+RUN echo "=== Final packages ===" && npm list --depth=0
 
 # Copy backend source code
 COPY backend/ ./
