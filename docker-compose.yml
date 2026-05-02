@@ -22,6 +22,12 @@ services:
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     networks:
       - finance-network
     deploy:
@@ -52,7 +58,8 @@ services:
     ports:
       - "5001:5001"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - finance-network
     deploy:

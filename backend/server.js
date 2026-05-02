@@ -1758,14 +1758,32 @@ app.use((error, _req, res, _next) => {
 });
 
 async function startServer() {
-  await initializeDatabase();
+  const maxRetries = 10;
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      console.log(`Initializing database (attempt ${retries + 1}/${maxRetries})...`);
+      await initializeDatabase();
+      console.log('✓ Database initialized successfully');
+      break;
+    } catch (error) {
+      retries++;
+      if (retries >= maxRetries) {
+        console.error('✗ Failed to initialize database after', maxRetries, 'attempts:', error.message);
+        process.exit(1);
+      }
+      console.warn(`⚠ Database initialization failed, retrying in 3 seconds...`, error.message);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  }
 
   app.listen(port, () => {
-    console.log(`API running on http://localhost:${port}`);
+    console.log(`✓ API running on http://localhost:${port}`);
   });
 }
 
 startServer().catch((error) => {
-  console.error('Failed to start server:', error);
+  console.error('✗ Failed to start server:', error);
   process.exit(1);
 });
