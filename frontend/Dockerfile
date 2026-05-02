@@ -6,7 +6,6 @@ ENV NODE_ENV=development
 
 # Copy ONLY frontend package files (bypass root workspace config)
 COPY frontend/package.json ./
-COPY frontend/package-lock.json ./
 
 # Clear npm cache and set longer timeouts
 RUN npm cache clean --force && \
