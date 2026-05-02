@@ -7,19 +7,36 @@ ENV NODE_ENV=development
 # Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install frontend dependencies - show full output
-RUN npm install --verbose 2>&1 | tail -100
+# Clear npm cache and increase timeouts
+RUN npm cache clean --force && \
+    npm config set fetch-timeout 120000 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
 
-# CRITICAL: Verify recharts and other key dependencies are installed
-RUN test -d node_modules/recharts || (echo "ERROR: recharts not installed!" && exit 1)
-RUN test -d node_modules/react || (echo "ERROR: react not installed!" && exit 1)
-RUN test -d node_modules/vite || (echo "ERROR: vite not installed!" && exit 1)
+# Install frontend dependencies with explicit flags
+RUN npm install \
+    --no-audit \
+    --no-fund \
+    --production=false \
+    --prefer-offline \
+    --verbose 2>&1 | tee /tmp/npm-install.log
 
-# Show what's installed
-RUN echo "=== Package installation verified ===" && \
-    ls -la node_modules/ | head -30 && \
-    echo "=== recharts installed ===" && \
-    ls -la node_modules/recharts 2>&1 | head -5
+# Show installation summary
+RUN echo "=== NPM Install Complete ===" && \
+    tail -50 /tmp/npm-install.log
+
+# VERIFY critical packages exist
+RUN echo "=== Checking recharts ===" && \
+    ls -lh node_modules/recharts/package.json 2>&1 || (echo "FAIL: recharts missing" && cat /tmp/npm-install.log && exit 1)
+
+RUN echo "=== Checking react ===" && \
+    ls -lh node_modules/react/package.json 2>&1 || (echo "FAIL: react missing" && exit 1)
+
+RUN echo "=== Checking vite ===" && \
+    ls -lh node_modules/vite/package.json 2>&1 || (echo "FAIL: vite missing" && exit 1)
+
+# List key packages
+RUN echo "=== Installed packages ===" && npm list --depth=0
 
 # Copy frontend source code
 COPY frontend/src ./src
